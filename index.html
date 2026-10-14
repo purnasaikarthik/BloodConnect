@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BloodConnect | Blood Banking System</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;800&family=Instrument+Sans:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#14080a;--sf:#221015;--ink:#f6e9e4;--mute:#b99a98;--red:#e0243a;--deep:#8d0f22;--plasma:#f2c48d;--ok:#6fd49a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 80% -10%,#3a0f18,transparent),var(--bg);color:var(--ink);font:16px/1.6 'Instrument Sans',system-ui,sans-serif;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden}
+h1,h2,h3{font-family:'Bricolage Grotesque',Georgia,sans-serif;line-height:1.05}
+header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 6%;background:rgba(20,8,10,.82);backdrop-filter:blur(10px);border-bottom:1px solid #3a1c22}
+.logo{font:800 24px 'Bricolage Grotesque',sans-serif;cursor:pointer;display:inline-block;transform-origin:left center;animation:beat 1.3s ease-in-out infinite}
+.logo i{color:var(--red);font-style:normal;animation:glow 1.3s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}14%{transform:scale(1.13)}28%{transform:scale(1)}42%{transform:scale(1.08)}70%{transform:scale(1)}}
+@keyframes glow{0%,100%{text-shadow:0 0 0 rgba(224,36,58,0)}14%{text-shadow:0 0 18px rgba(255,70,90,.95)}28%{text-shadow:0 0 0 rgba(224,36,58,0)}42%{text-shadow:0 0 12px rgba(255,70,90,.7)}}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav a{padding:8px 14px;border-radius:99px;color:var(--mute);cursor:pointer;font-weight:600;transition:.2s}
+nav a:hover,nav a.on{color:var(--ink);background:#33161d}
+.more{position:relative}
+.menu{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:180px;background:var(--sf);border:1px solid #4a2530;border-radius:14px;padding:6px;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+.more.open .menu{display:block}.menu a{display:block;border-radius:10px}
+nav a.cta{background:linear-gradient(180deg,#f0394d,var(--deep));color:#fff}
+nav a.cta:hover{background:linear-gradient(180deg,#ff5265,var(--red))}
+.acct>a{background:#33161d;color:var(--ink)}
+#burger{display:none;background:#33161d;border:0;color:var(--ink);border-radius:10px;font-size:22px;padding:4px 12px;cursor:pointer}
+footer{flex-shrink:0;align-items:flex-start;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:26px 6%;color:var(--mute);border-top:1px solid #3a1c22;font-size:14px}
+footer a{color:var(--plasma);text-decoration:underline}footer b{color:var(--ink)}footer .contact{text-align:right}
+nav{align-items:center}
+nav a,.more>a{display:block;padding:8px 14px;border-radius:99px;color:var(--mute);cursor:pointer;font-weight:600;white-space:nowrap;transition:.2s}
+nav a:hover,nav a.on,.more>a:hover,.more.open>a{color:var(--ink);background:#33161d}
+details{background:var(--sf);border:1px solid #3a1c22;border-radius:14px;padding:14px 18px;margin-bottom:10px}
+summary{cursor:pointer;font-weight:600}details p{color:var(--mute);margin-top:8px}
+.about h3{margin:34px 0 10px;font-size:26px}.about ul{margin:0 0 0 20px;color:var(--mute)}.about li{margin-bottom:6px}
+main{flex:1 0 auto;width:100%;padding:0 6% 80px}
+.page{display:none}.page.on{display:block;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(10px)}}
+.btn{border:0;border-radius:14px;padding:14px 26px;font:600 16px inherit;font-family:inherit;cursor:pointer;color:#fff;background:linear-gradient(180deg,#f0394d,var(--deep));box-shadow:0 6px 0 #5a0a16,0 14px 24px rgba(224,36,58,.3);transition:.15s}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:translateY(5px);box-shadow:0 1px 0 #5a0a16}
+.btn.alt{background:linear-gradient(180deg,#fff2e0,var(--plasma));color:#4a2108;box-shadow:0 6px 0 #a5784a,0 14px 24px rgba(242,196,141,.2)}
+.btn.sm{padding:7px 14px;font-size:14px;box-shadow:none;border-radius:10px}
+/* hero + 3D scene */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;min-height:78vh;padding-top:30px}
+.hero h1{font-size:clamp(40px,6vw,84px);font-weight:800;letter-spacing:-.03em}
+.hero p{max-width:46ch;color:var(--mute);margin:18px 0 28px;font-size:18px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.counts{display:flex;gap:36px;margin-top:38px}
+.counts b{display:block;font:800 44px 'Bricolage Grotesque',sans-serif;color:var(--plasma)}
+.counts span{color:var(--mute)}
+.scene{perspective:900px;height:440px;position:relative}
+.world{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .15s}
+.cell{position:absolute;border-radius:50%;background:radial-gradient(circle at 32% 28%,#ff8a96,var(--red) 38%,#5a0a16 78%);box-shadow:inset -14px -18px 30px rgba(0,0,0,.45),0 30px 40px rgba(0,0,0,.4);animation:bob 6s ease-in-out infinite}
+.cell::after{content:"";position:absolute;inset:28%;border-radius:50%;background:radial-gradient(circle at 60% 60%,rgba(0,0,0,.35),transparent 70%)}
+@keyframes bob{50%{margin-top:-22px}}
+.core{left:50%;top:50%;width:230px;height:230px;margin:-115px 0 0 -115px;transform:translateZ(60px) rotateY(-12deg);animation:spin 14s linear infinite}
+@keyframes spin{to{transform:translateZ(60px) rotateY(348deg)}}
+/* sections */
+section{margin-top:70px}
+h2{font-size:clamp(30px,4vw,48px);font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+.lead{color:var(--mute);margin-bottom:26px;max-width:60ch}
+.stock{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px;perspective:800px}
+.tile{background:var(--sf);border:1px solid #3a1c22;border-radius:18px;padding:18px;transform-style:preserve-3d;transition:transform .2s}
+.tile:hover{transform:rotateX(8deg) rotateY(-8deg) translateZ(14px)}
+.tile b{font:800 34px 'Bricolage Grotesque',sans-serif}
+.bar{height:8px;border-radius:9px;background:#3a1c22;margin:10px 0 6px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--deep),var(--red));border-radius:9px;transition:width .8s}
+.tile small{color:var(--mute)}.low small{color:var(--plasma)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.card{background:var(--sf);border:1px solid #3a1c22;border-radius:18px;padding:22px}
+.card h3{font-size:22px;margin-bottom:6px}.card p,.card li{color:var(--mute)}
+/* emergency */
+.sos{border:1px solid var(--red);border-radius:20px;padding:22px;margin-top:40px;background:linear-gradient(120deg,rgba(224,36,58,.22),rgba(224,36,58,.06));animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 10px rgba(224,36,58,.12)}}
+.sos h2{font-size:30px;color:#ff7a89}
+.sos .item{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 0;border-top:1px solid rgba(255,255,255,.1)}
+.sos .item:first-of-type{border-top:0}
+.tag{background:var(--red);color:#fff;border-radius:8px;padding:2px 10px;font-weight:800}
+/* modal + forms */
+.modal{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(10,3,5,.78);padding:16px;perspective:1000px;overflow:auto}
+.modal.on{display:grid}
+.sheet{width:min(520px,100%);background:var(--sf);border:1px solid #4a2530;border-radius:22px;padding:28px;animation:flip .5s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes flip{from{opacity:0;transform:rotateX(-40deg) translateY(40px)}}
+.sheet h2{font-size:30px}
+label{display:block;margin:14px 0 5px;font-weight:600;font-size:14px;color:var(--mute)}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid #4a2530;background:#170a0d;color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--plasma);outline-offset:1px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sheet .btn{width:100%;margin-top:22px}
+.x{float:right;background:none;border:0;color:var(--mute);font-size:26px;cursor:pointer}
+.narrow{max-width:520px;margin:50px auto}
+#f .btn{width:100%;margin-top:22px}
+.tabs{display:flex;gap:8px;margin:14px 0}
+table{width:100%;border-collapse:collapse;background:var(--sf);border-radius:14px;overflow:hidden}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid #3a1c22;font-size:14px}th{color:var(--plasma)}
+.scroll{overflow-x:auto}
+.camp{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center}
+.date{background:var(--red);border-radius:14px;padding:10px 16px;text-align:center;font:800 26px 'Bricolage Grotesque',sans-serif;line-height:1}.date small{display:block;font:600 12px 'Instrument Sans'}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--ink);color:#2a0a10;padding:12px 22px;border-radius:12px;font-weight:600;z-index:200;transition:.3s}
+#toast.on{transform:translateX(-50%)}
+.empty{color:var(--mute);padding:14px 0}
+@media(max-width:820px){#burger{display:block}nav{display:none;width:100%;flex-direction:column;align-items:stretch;gap:4px;padding:8px 0}nav a,.more>a{padding:13px 16px;border-radius:12px}.more{width:100%}nav.open{display:flex}.menu{position:static;box-shadow:none;margin:4px 0 0 12px}.hero{grid-template-columns:1fr}.scene{height:300px}.core{width:170px;height:170px;margin:-85px 0 0 -85px}.two{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" onclick="go('home')">Blood<i>Connect</i></div>
+  <button id="burger" aria-label="Menu" onclick="$('nav').classList.toggle('open')">&#9776;</button>
+  <nav id="nav"></nav>
+</header>
+
+<main>
+<!-- HOME -->
+<div class="page on" id="home">
+  <div class="hero">
+    <div>
+      <h1>One donation reaches three patients.</h1>
+      <p>BloodConnect links donors, patients and hospitals in one place. Register as a donor, request blood when it is needed, or find a donation camp near you.</p>
+      <div class="row">
+        <button class="btn" onclick="go('give')">Give blood</button>
+        <button class="btn alt" onclick="go('want')">Want blood</button>
+      </div>
+      <div class="counts"><div><b id="cDonors">0</b><span>registered donors</span></div><div><b id="cUnits">0</b><span>units available</span></div></div>
+    </div>
+    <div class="scene" id="scene"><div class="world" id="world">
+      <div class="cell core"></div>
+      <div class="cell" style="width:90px;height:90px;left:6%;top:12%;transform:translateZ(120px);animation-delay:-2s"></div>
+      <div class="cell" style="width:60px;height:60px;right:8%;top:18%;transform:translateZ(-40px);animation-delay:-4s"></div>
+      <div class="cell" style="width:110px;height:110px;right:12%;bottom:6%;transform:translateZ(150px);animation-delay:-1s"></div>
+      <div class="cell" style="width:50px;height:50px;left:14%;bottom:14%;transform:translateZ(-80px);animation-delay:-3s"></div>
+    </div></div>
+  </div>
+
+  <div id="sos"></div>
+
+  <section>
+    <h2>Blood available now</h2>
+    <p class="lead">Every new donor adds a unit to their blood group below.</p>
+    <div class="stock" id="stock"></div>
+  </section>
+
+  <section>
+    <h2>How it works</h2>
+    <p class="lead">&nbsp;</p>
+    <div class="steps">
+      <div class="card"><h3>Donors register</h3><p>Fill in a short form. Your blood group is added to the available stock straight away.</p></div>
+      <div class="card"><h3>Patients request</h3><p>Say which group you need and by when. Every verified hospital and blood bank gets an email.</p></div>
+      <div class="card"><h3>Emergencies go public</h3><p>A request due in under 24 hours is posted at the top of this page so donors can act right away.</p></div>
+    </div>
+  </section>
+</div>
+
+<!-- GIVE BLOOD -->
+<div class="page" id="give"><section style="margin-top:40px"><h2>Give blood</h2><p class="lead">Become a donor. Your blood group is added to the available stock as soon as you register.</p>
+  <div class="card narrow" style="margin:0 auto" id="giveBox"></div></section></div>
+
+<!-- WANT BLOOD -->
+<div class="page" id="want"><section style="margin-top:40px"><h2>Want blood</h2><p class="lead">Tell us who needs blood and by when. Hospitals and blood banks are emailed, and requests due within 24 hours are posted as emergencies.</p>
+  <div class="card narrow" style="margin:0 auto" id="wantBox"></div></section></div>
+
+<!-- AVAILABILITY -->
+<div class="page" id="avail"><section style="margin-top:40px"><h2>Blood availability</h2><p class="lead">Current stock by blood group.</p>
+  <div class="scroll"><table id="availT"></table></div></section></div>
+
+<!-- EMERGENCY -->
+<div class="page" id="emergency"><section style="margin-top:40px"><h2>Emergency requests</h2><p class="lead">Patients who need blood within 24 hours. Need blood urgently yourself? Set "Needed within" to under 24 hours on the Want Blood page.</p>
+  <div id="sos2"></div><button class="btn" style="margin-top:20px" onclick="go('want')">Request blood</button></section></div>
+
+<!-- ABOUT -->
+<div class="page about" id="about"><section style="margin-top:40px">
+  <h2>About BloodConnect</h2>
+  <p class="lead">BloodConnect is a blood banking system that brings donors, patients, hospitals and blood banks onto one page, so that blood reaches the person who needs it in time.</p>
+
+  <h3>Why we exist</h3>
+  <p class="lead">Blood cannot be manufactured. It can only come from donors, and it has a short shelf life: red cells last about 42 days and platelets only about 5. Hospitals often need a specific blood group at short notice, and families end up calling around, posting on social media and hoping the message reaches the right person. BloodConnect replaces that scramble with one place where donors register, patients ask, and verified hospitals respond.</p>
+
+  <h3>What you can do here</h3>
+  <div class="steps">
+    <div class="card"><h3>Donors</h3><p>Register with your blood group and contact details. Your donation is added to the available stock straight away, and hospitals can reach you when your group is needed. You can also find upcoming donation camps near you.</p></div>
+    <div class="card"><h3>Patients and families</h3><p>Use Want Blood to say which group you need and by when. Every approved hospital and blood bank is emailed your details. If the blood is needed within 24 hours, your request is also posted on the homepage as an emergency.</p></div>
+    <div class="card"><h3>Hospitals and blood banks</h3><p>Register your institution and, once the admin approves it, receive blood requests by email and organise donation camps. Each hospital can manage only its own camps.</p></div>
+    <div class="card"><h3>Admin</h3><p>The admin approves hospital registrations and keeps the site trustworthy by reviewing donors, requests and camps, and removing anything that should not be there.</p></div>
+  </div>
+
+  <h3>How a request works</h3>
+  <div class="steps">
+    <div class="card"><h3>1. Request</h3><p>The patient or a family member fills in the Want Blood form with the blood group, contact details and a deadline.</p></div>
+    <div class="card"><h3>2. Alert</h3><p>All approved hospitals and blood banks receive an email with the patient's details.</p></div>
+    <div class="card"><h3>3. Emergency</h3><p>If the deadline is under 24 hours, the request appears on the homepage with an emergency banner so donors can respond directly.</p></div>
+    <div class="card"><h3>4. Contact</h3><p>A hospital or donor calls the patient on the number given and arranges the donation.</p></div>
+  </div>
+
+  <h3>Who can donate?</h3>
+  <p class="lead">Rules differ between countries and blood centres, and the doctor at the donation site always makes the final decision. As a general guide, a donor:</p>
+  <ul>
+    <li>is between 18 and 65 years old (this site accepts registrations in that range)</li>
+    <li>weighs at least 45 kg and feels healthy on the day</li>
+    <li>has a haemoglobin level in the accepted range, which is checked before donating</li>
+    <li>has not donated whole blood in the last 3 to 4 months</li>
+    <li>is not ill, pregnant, or taking medicines that rule out donation</li>
+  </ul>
+
+  <h3>What happens when you donate</h3>
+  <p class="lead">A short registration and health check comes first: your pulse, blood pressure and haemoglobin are measured. The donation itself takes about 10 to 15 minutes and collects roughly 350 to 450 ml of blood. You then rest, have a drink and a snack, and most people carry on with their day. One donation can be separated into red cells, plasma and platelets, and can help up to three patients.</p>
+
+  <h3>Who can receive from whom</h3>
+  <div class="scroll"><table>
+    <tr><th>Blood group</th><th>Can donate to</th><th>Can receive from</th></tr>
+    <tr><td><b>A+</b></td><td>A+, AB+</td><td>A+, A-, O+, O-</td></tr>
+    <tr><td><b>A-</b></td><td>A+, A-, AB+, AB-</td><td>A-, O-</td></tr>
+    <tr><td><b>B+</b></td><td>B+, AB+</td><td>B+, B-, O+, O-</td></tr>
+    <tr><td><b>B-</b></td><td>B+, B-, AB+, AB-</td><td>B-, O-</td></tr>
+    <tr><td><b>AB+</b></td><td>AB+</td><td>All groups</td></tr>
+    <tr><td><b>AB-</b></td><td>AB+, AB-</td><td>A-, B-, AB-, O-</td></tr>
+    <tr><td><b>O+</b></td><td>O+, A+, B+, AB+</td><td>O+, O-</td></tr>
+    <tr><td><b>O-</b></td><td>All groups</td><td>O-</td></tr>
+  </table></div>
+  <p class="lead" style="margin-top:10px">O- is the universal donor group and is always in demand in emergencies. AB+ patients can receive from any group.</p>
+
+  <h3>Privacy and trust</h3>
+  <ul>
+    <li>Only an admin-approved hospital can log in, post camps or read blood requests.</li>
+    <li>Donor details are visible only to the admin. The public sees just the number of donors.</li>
+    <li>Emergency requests show the patient's name, address and mobile number on the homepage so that donors can respond quickly. Only use the Want Blood form if you are comfortable with this.</li>
+    <li>Hospitals can delete only their own camps. The admin can remove any entry that is wrong or misused.</li>
+  </ul>
+
+  <h3>Common questions</h3>
+  <details><summary>Do donors or patients need an account?</summary><p>No. Only hospitals and blood banks register and log in. Donors and patients simply fill in a form.</p></details>
+  <details><summary>Is BloodConnect a hospital or a blood bank?</summary><p>No. BloodConnect is a connecting platform. Blood is collected, tested and stored by licensed hospitals and blood banks, and any medical decision is made by their doctors.</p></details>
+  <details><summary>Does a registration guarantee that blood is available?</summary><p>The availability figures are based on donors registered on this site and are a guide only. Always confirm stock with the hospital or blood bank before relying on it.</p></details>
+  <details><summary>My hospital registered but cannot log in.</summary><p>New hospital accounts must be approved by the admin first. You can log in as soon as the approval is done.</p></details>
+  <details><summary>Is the service free?</summary><p>Yes. BloodConnect is free for donors, patients and hospitals, and blood should never be sold through this site.</p></details>
+
+  <h3>Get in touch</h3>
+  <p class="lead">Questions, corrections or a hospital that needs help getting approved? Write to <a href="mailto:godofnewworld01@gmail.com" style="color:var(--plasma)">godofnewworld01@gmail.com</a>.</p>
+</section></div>
+
+<!-- CAMPS -->
+<div class="page" id="camps">
+  <section style="margin-top:40px"><h2>Blood donation camps</h2><p class="lead">Camps posted by verified hospitals. Visit one to donate.</p>
+  <div id="campForm"></div><div id="campList"></div></section>
+</div>
+
+<!-- HOSPITAL AUTH -->
+<div class="page" id="auth">
+  <div class="card narrow">
+    <h2>Log in or sign up</h2><p class="lead" style="margin-bottom:0">Hospitals and blood banks can register here. An admin must approve your account before you can log in. Admins log in with their admin credentials.</p>
+    <div class="tabs"><button class="btn sm alt" id="tLogin" onclick="tab('login')">Log in</button><button class="btn sm" id="tSign" onclick="tab('signup')">Sign up</button></div>
+    <div id="signFields" style="display:none"><label>Hospital / blood bank name</label><input id="aName"><label>Address</label><input id="aAddr"></div>
+    <label>Email</label><input id="aMail" type="email"><label>Password</label><input id="aPass" type="password" minlength="6">
+    <button class="btn" id="aGo" onclick="authGo()" style="width:100%;margin-top:22px">Log in</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="admin">
+  <section style="margin-top:40px"><h2>Admin</h2><p class="lead">Review everything on the site, update blood availability, and delete what should not be there.</p>
+  <button class="btn" onclick="downloadReport()" style="margin-bottom:10px">Reports (PDF)</button>
+  <div id="adminBody"></div></section>
+</div>
+</main>
+
+<footer><div><b>BloodConnect</b><br>Every donation counts.</div><div class="contact"><b>Contact</b><br>Gmail: <a href="mailto:godofnewworld01@gmail.com">godofnewworld01@gmail.com</a></div></footer>
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+
+<script>
+/* Supabase project. The anon key is public by design; never put the service_role key here. */
+const SUPABASE_URL = 'https://bwamhnfpcezjjupksjve.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3YW1obmZwY2V6amp1cGtzanZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5NTU4NDYsImV4cCI6MjEwNzUzMTg0Nn0.3mlZNvruRM5ZZeWzXBh6gu9UMVL1GL64kzsMY0OcJdM';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const GROUPS = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let me = null; // {id, role, hospital_name}
+
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),3200); }
+function go(p){
+  document.querySelectorAll('.more').forEach(m=>m.classList.remove('open')); $('nav').classList.remove('open');
+  if(p==='admin'&&me?.role!=='admin'){ toast('Log in with the admin account to open the admin page.'); p='auth'; }
+  if(p==='give') renderForm('donor','giveBox'); if(p==='want') renderForm('request','wantBox');
+  document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id===p));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.p===p));
+  if(p==='camps') loadCamps(); if(p==='admin') loadAdmin(); window.scrollTo(0,0);
+}
+function tm(el){const p=el.parentNode,o=p.classList.contains('open');document.querySelectorAll('.more').forEach(m=>m.classList.remove('open'));if(!o)p.classList.add('open')}
+function buildNav(){
+  const L=([p,t])=>`<a data-p="${p}" onclick="go('${p}')">${t}</a>`;
+  let h=[['home','Home'],['give','Give Blood'],['want','Want Blood'],['camps','Camps']].map(L).join('');
+  h+=`<div class="more"><a onclick="tm(this)">More &#9662;</a><div class="menu">${[['avail','Availability'],['emergency','Emergency'],['about','About']].map(L).join('')}</div></div>`;
+  if(!me) h+=`<a class="authlink" data-p="auth" onclick="go('auth');tab('login')">Log in</a><a class="authlink cta" onclick="go('auth');tab('signup')">Hospital sign up</a>`;
+  if(me) h+=`<div class="more acct"><a onclick="tm(this)">${esc(me.role==='admin'?'Admin':me.hospital_name)} &#9662;</a><div class="menu">${me.role==='admin'?L(['admin','Admin panel']):L(['camps','Post a camp'])}<a onclick="logout()">Log out</a></div></div>`;
+  $('nav').innerHTML=h;
+}
+
+/* ---- 3D parallax ---- */
+$('scene').addEventListener('mousemove',e=>{
+  const r=$('scene').getBoundingClientRect(), x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+  $('world').style.transform=`rotateY(${x*28}deg) rotateX(${-y*22}deg)`;
+});
+$('scene').addEventListener('mouseleave',()=>$('world').style.transform='');
+
+/* ---- Home data ---- */
+async function loadHome(){
+  const [st,stock,sos]=await Promise.all([db.rpc('get_stats'),db.from('blood_stock').select('*'),db.from('emergency_public').select('*').order('needed_by')]);
+  if(st.error) return toast('Could not reach the database. Check your Supabase keys.');
+  count('cDonors',st.data.donors); count('cUnits',(stock.data||[]).reduce((a,b)=>a+b.units,0));
+  const max=Math.max(10,...(stock.data||[]).map(s=>s.units));
+  const by=Object.fromEntries((stock.data||[]).map(s=>[s.blood_group,s.units]));
+  $('stock').innerHTML=GROUPS.map(g=>{const u=by[g]||0;return `<div class="tile ${u<5?'low':''}"><b>${g}</b><div class="bar"><i style="width:${u/max*100}%"></i></div><small>${u} units${u<5?' · running low':''}</small></div>`}).join('');
+  const list=sos.data||[];
+  $('sos').innerHTML=list.length?`<div class="sos"><h2>Emergency: blood needed within 24 hours</h2>${list.map(r=>`<div class="item"><div><span class="tag">${esc(r.blood_group)}</span> <b>${esc(r.name)}</b>, ${esc(r.address)}<br><small>Needed by ${new Date(r.needed_by).toLocaleString()}</small></div><div>Call <b>${esc(r.mobile)}</b></div></div>`).join('')}<p style="margin-top:8px;color:var(--mute)">If you match, please act now.</p></div>`:'';
+  $('sos2').innerHTML=$('sos').innerHTML||'<p class="empty">No emergency requests right now.</p>';
+  $('availT').innerHTML='<tr><th>Blood group</th><th>Units</th><th>Stock</th><th>Status</th></tr>'+GROUPS.map(g=>{const u=by[g]||0;return `<tr><td><b>${g}</b></td><td>${u}</td><td style="width:35%"><div class="bar"><i style="width:${u/max*100}%"></i></div></td><td style="color:${u<5?'var(--plasma)':'var(--ok)'};font-weight:600">${u<5?'Low stock':'Available'}</td></tr>`}).join('');
+}
+function count(id,to){const el=$(id);let n=0;const t=setInterval(()=>{n+=Math.max(1,Math.ceil(to/30));if(n>=to){n=to;clearInterval(t)}el.textContent=n},25)}
+
+/* ---- Forms ---- */
+const gOpts=GROUPS.map(g=>`<option>${g}</option>`).join('');
+function common(){return `<label>Full name</label><input name="name" required>
+<div class="two"><div><label>Age</label><input name="age" type="number" min="1" max="100" required></div>
+<div><label>Gender</label><select name="gender"><option>Female</option><option>Male</option><option>Other</option></select></div></div>
+<div class="two"><div><label>Blood group</label><select name="blood_group">${gOpts}</select></div>
+<div><label>Mobile number</label><input name="mobile" type="tel" pattern="[0-9+ ]{8,15}" required></div></div>
+<label>Address</label><textarea name="address" rows="2" required></textarea>`}
+function openForm(kind){ go(kind==='donor'?'give':'want'); }
+function renderForm(kind,box){
+  const d=kind==='donor';
+  $(box).innerHTML=`<form id="f">${common()}${d?'':`<label>Needed within</label><div class="two"><input name="n" type="number" min="1" value="3" required><select name="unit"><option value="24">days</option><option value="1">hours</option></select></div>`}
+  <button class="btn" type="submit">${d?'Register as donor':'Send request'}</button></form>`;
+  $('f').onsubmit=async e=>{
+    e.preventDefault(); const f=Object.fromEntries(new FormData(e.target)); let row,tbl;
+    if(d){ if(f.age<18||f.age>65) return toast('Donors must be between 18 and 65.'); tbl='donors'; row={name:f.name,age:+f.age,gender:f.gender,blood_group:f.blood_group,mobile:f.mobile,address:f.address}; }
+    else { tbl='requests'; row={name:f.name,age:+f.age,gender:f.gender,blood_group:f.blood_group,mobile:f.mobile,address:f.address,needed_by:new Date(Date.now()+f.n*f.unit*3600000).toISOString()}; }
+    const {error}=await db.from(tbl).insert(row);
+    if(error) return toast('Something went wrong: '+error.message);
+    e.target.reset(); toast(d?'Thank you. You are registered as a donor.':'Request sent to hospitals and blood banks.'); loadHome();
+  };
+}
+function closeModal(){ $('modal').classList.remove('on'); }
+$('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+
+/* ---- Auth ---- */
+let mode='login';
+function clearAuth(){ ['aName','aAddr','aMail','aPass'].forEach(i=>$(i).value=''); }
+function tab(m){ clearAuth(); $('aPass').setAttribute('autocomplete',m==='signup'?'new-password':'current-password'); mode=m; $('signFields').style.display=m==='signup'?'block':'none'; $('aGo').textContent=m==='signup'?'Register hospital':'Log in'; $('tLogin').classList.toggle('alt',m==='login'); $('tSign').classList.toggle('alt',m==='signup'); }
+async function authGo(){
+  const email=$('aMail').value, password=$('aPass').value;
+  if(!email||password.length<6) return toast('Enter an email and a password of 6+ characters.');
+  if(mode==='signup'){
+    if(!$('aName').value||!$('aAddr').value) return toast('Enter the hospital name and address.');
+    const {error}=await db.auth.signUp({email,password,options:{data:{hospital_name:$('aName').value,address:$('aAddr').value}}});
+    if(error) return toast(error.message); await db.auth.signOut(); toast('Registered. You can log in once the admin approves your account.'); return tab('login');
+  }
+  const {error}=await db.auth.signInWithPassword({email,password});
+  if(error) return toast(error.message);
+  const pr=await loadMe();
+  if(!pr){ await db.auth.signOut(); return toast('No hospital or admin account found for this login.'); }
+  if(!me) return toast(pr.status==='rejected'?'Your registration was not approved. Please contact the admin.':'Your account is waiting for admin approval. Try again after it is approved.');
+  clearAuth(); toast('Welcome, '+(me.hospital_name||'admin')); go(me.role==='admin'?'admin':'camps');
+}
+async function logout(){ await db.auth.signOut(); me=null; buildNav(); go('home'); }
+async function loadMe(){
+  const {data:{user}}=await db.auth.getUser(); let p=null;
+  if(user){ const r=await db.from('profiles').select('*').eq('id',user.id).single(); p=r.data; }
+  if(p&&p.role!=='admin'&&p.status!=='approved'){ await db.auth.signOut(); me=null; buildNav(); return p; }
+  me=p; buildNav(); return p;
+}
+
+/* ---- Camps ---- */
+async function loadCamps(){
+  $('campForm').innerHTML=me?.role==='hospital'?`<div class="card" style="margin-bottom:24px"><h3>Post a camp for ${esc(me.hospital_name)}</h3>
+  <div class="two"><div><label>Date</label><input id="cDate" type="date"></div><div><label>Time</label><input id="cTime" placeholder="9:00 AM to 2:00 PM"></div></div>
+  <label>Camp address</label><input id="cAddr"><button class="btn sm" style="margin-top:16px" onclick="addCamp()">Post camp</button></div>`:'';
+  const {data,error}=await db.from('camps').select('*').gte('camp_date',new Date().toISOString().slice(0,10)).order('camp_date');
+  if(error) return toast(error.message);
+  $('campList').innerHTML=(data||[]).length?data.map(c=>{const d=new Date(c.camp_date+'T00:00');return `<div class="card camp" style="margin-bottom:14px"><div class="date">${d.getDate()}<small>${d.toLocaleString('en',{month:'short'})}</small></div><div><h3>${esc(c.hospital_name)}</h3><p>${esc(c.camp_time)} · ${esc(c.address)}</p></div>${me&&(me.role==='admin'||me.id===c.hospital_id)?`<button class="btn sm" onclick="delRow('camps','${c.id}',loadCamps)">Delete</button>`:''}</div>`}).join(''):'<p class="empty">No upcoming camps yet.</p>';
+}
+async function addCamp(){
+  const row={hospital_id:me.id,hospital_name:me.hospital_name,camp_date:$('cDate').value,camp_time:$('cTime').value,address:$('cAddr').value};
+  if(!row.camp_date||!row.camp_time||!row.address) return toast('Fill in date, time and address.');
+  const {error}=await db.from('camps').insert(row); if(error) return toast(error.message); toast('Camp posted.'); loadCamps();
+}
+
+/* ---- Admin ---- */
+const AD={donors:['name','age','gender','blood_group','mobile','address'],requests:['name','age','blood_group','mobile','address','needed_by','is_emergency'],camps:['hospital_name','camp_date','camp_time','address'],profiles:['hospital_name','email','address','role','status']};
+async function loadAdmin(){
+  if(me?.role!=='admin'){ $('adminBody').innerHTML='<p class="empty">Admin access only.</p>'; return; }
+  const {data:pend}=await db.from('profiles').select('*').eq('status','pending').eq('role','hospital');
+  let h=`<div class="card"><h3>Hospital approvals (${(pend||[]).length} pending)</h3>`+((pend||[]).length?`<div class="scroll"><table><tr><th>Hospital</th><th>Email</th><th>Address</th><th></th></tr>${pend.map(p=>`<tr><td>${esc(p.hospital_name)}</td><td>${esc(p.email)}</td><td>${esc(p.address)}</td><td style="white-space:nowrap"><button class="btn sm" onclick="setStatus('${p.id}','approved')">Approve</button> <button class="btn sm alt" onclick="setStatus('${p.id}','rejected')">Reject</button></td></tr>`).join('')}</table></div>`:'<p class="empty">No hospitals are waiting for approval.</p>')+'</div>';
+  const {data:stk}=await db.from('blood_stock').select('*');
+  const sb=Object.fromEntries((stk||[]).map(x=>[x.blood_group,x.units]));
+  h+=`<h3 style="margin:30px 0 10px">Blood availability (edit units)</h3><div class="stock">${GROUPS.map(g=>`<div class="tile"><b>${g}</b><div style="display:flex;gap:6px;margin-top:8px"><input type="number" min="0" id="stk_${g}" value="${sb[g]||0}"><button class="btn sm" onclick="saveStock('${g}')">Save</button></div></div>`).join('')}</div>`;
+  for(const t of Object.keys(AD)){
+    let q=db.from(t).select('*').order(t==='profiles'?'hospital_name':'created_at',{ascending:false});
+    if(t==='profiles') q=q.eq('role','hospital');
+    const {data}=await q;
+    h+=`<h3 style="margin:30px 0 10px">${t==='profiles'?'hospitals':t} (${(data||[]).length})</h3><div class="scroll"><table><tr>${AD[t].map(c=>`<th>${c.replace('_',' ')}</th>`).join('')}<th></th></tr>${(data||[]).map(r=>`<tr>${AD[t].map(c=>`<td>${esc(r[c])}</td>`).join('')}<td>${r.role==='admin'?'':`<button class="btn sm" onclick="${t==='profiles'?`delHospital('${r.id}')`:`delRow('${t}','${r.id}',loadAdmin)`}">Delete</button>`}</td></tr>`).join('')}</table></div>`;
+  }
+  $('adminBody').innerHTML=h;
+}
+async function delHospital(id){
+  if(!confirm('Delete this hospital, its login account and its camps permanently?')) return;
+  const {error}=await db.rpc('admin_delete_hospital',{hid:id});
+  if(error) return toast(error.message);
+  toast('Hospital deleted. It will no longer receive any emails.'); loadAdmin(); loadHome();
+}
+async function saveStock(g){
+  const v=parseInt($('stk_'+g).value);
+  if(isNaN(v)||v<0) return toast('Enter a number of 0 or more.');
+  const {data,error}=await db.from('blood_stock').update({units:v}).eq('blood_group',g).select();
+  if(error) return toast(error.message);
+  if(!data||!data.length) return toast('Update was not allowed. Log in as admin and try again.');
+  toast(g+' availability set to '+v+'.'); loadHome();
+}
+const ord=n=>{const j=n%10,k=n%100;return n+(j==1&&k!=11?'st':j==2&&k!=12?'nd':j==3&&k!=13?'rd':'th')};
+const dayKey=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
+async function downloadReport(){
+  if(!window.jspdf) return toast('The PDF tool did not load. Check your internet and try again.');
+  const [d,r]=await Promise.all([
+    db.from('donors').select('name,blood_group,created_at').order('created_at'),
+    db.from('requests').select('name,blood_group,created_at').order('created_at')]);
+  if(d.error||r.error) return toast((d.error||r.error).message);
+  const days={}, months={};
+  const add=(rows,k)=>(rows||[]).forEach(x=>{const key=dayKey(x.created_at),m=key.slice(0,7);
+    (days[key]=days[key]||{donated:[],wanted:[]})[k].push(x);
+    (months[m]=months[m]||{donated:0,wanted:0})[k]++;});
+  add(d.data,'donated'); add(r.data,'wanted');
+  const doc=new window.jspdf.jsPDF(); let y=20;
+  const line=(t,size,bold,gap,x)=>{ if(y>280){doc.addPage();y=20;} doc.setFontSize(size||11); doc.setFont('helvetica',bold?'bold':'normal'); doc.text(String(t),x||15,y); y+=(gap||6); };
+  line('BloodConnect Report',20,true,10);
+  line('Generated on '+new Date().toLocaleString('en-IN'),10,false,9);
+  line('Total people who donated blood: '+(d.data||[]).length,12,true);
+  line('Total people who asked for blood: '+(r.data||[]).length,12,true,10);
+  let lastM='';
+  Object.keys(days).sort().forEach(key=>{
+    const dt=new Date(key+'T00:00'), m=key.slice(0,7), mn=dt.toLocaleString('en',{month:'long'});
+    if(m!==lastM){ lastM=m; y+=4; line(mn+' '+dt.getFullYear()+'  (donated: '+months[m].donated+', asked: '+months[m].wanted+')',14,true,9); }
+    y+=2; line(mn+' '+ord(dt.getDate())+', '+dt.getFullYear()+':',12,true,7);
+    [['People donated:','donated'],['People wanted:','wanted']].forEach(([title,k])=>{
+      line(title,11,true,6,18);
+      if(!days[key][k].length) line('None',10,false,6,22);
+      days[key][k].forEach((p,i)=>line((i+1)+'. '+p.name+' ('+p.blood_group+')',10,false,6,22));
+    });
+  });
+  if(!Object.keys(days).length) line('No donors or requests yet.',11);
+  doc.save('BloodConnect-Report-'+dayKey(new Date())+'.pdf');
+}
+async function setStatus(id,status){
+  const {error}=await db.from('profiles').update({status}).eq('id',id);
+  if(error) return toast(error.message); toast(status==='approved'?'Hospital approved.':'Hospital rejected.'); loadAdmin();
+}
+async function delRow(t,id,after){
+  if(!confirm('Delete this entry permanently?')) return;
+  const {error}=await db.from(t).delete().eq('id',id); if(error) return toast(error.message); toast('Deleted.'); after(); loadHome();
+}
+
+buildNav(); loadMe().then(loadHome); if(location.hash==='#staff') go('auth'); db.auth.onAuthStateChange(()=>{});
+</script>
+</body>
+</html>
